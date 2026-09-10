@@ -14,77 +14,148 @@ st.set_page_config(
     page_title="Smart City Traffic Intelligence",
     page_icon="🚦",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="expanded",
 )
 
 
 # ============================================================
-# LOAD ENVIRONMENT VARIABLES
+# ENVIRONMENT
 # ============================================================
 
 load_dotenv()
 
 
 # ============================================================
-# CUSTOM CSS
+# MODERN UI STYLES
 # ============================================================
 
 st.markdown(
     """
     <style>
+        .block-container {
+            padding-top: 1.2rem;
+            padding-bottom: 2rem;
+            max-width: 1500px;
+        }
 
-    .main-title {
-        font-size: 38px;
-        font-weight: 700;
-        margin-bottom: 0px;
-    }
+        .hero {
+            padding: 1.2rem 1.4rem 1rem 1.4rem;
+            border: 1px solid rgba(128,128,128,0.18);
+            border-radius: 18px;
+            background: linear-gradient(135deg, rgba(250,250,252,0.96), rgba(240,244,248,0.90));
+            margin-bottom: 1rem;
+        }
 
-    .subtitle {
-        font-size: 17px;
-        color: #666666;
-        margin-top: 0px;
-        margin-bottom: 25px;
-    }
+        .hero-kicker {
+            font-size: 0.78rem;
+            font-weight: 700;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+            opacity: 0.62;
+            margin-bottom: 0.35rem;
+        }
 
-    .status-card {
-        padding: 18px;
-        border-radius: 12px;
-        border: 1px solid #dddddd;
-        text-align: center;
-        margin-bottom: 10px;
-    }
+        .hero-title {
+            font-size: 2.15rem;
+            font-weight: 800;
+            line-height: 1.08;
+            margin: 0;
+        }
 
-    .status-title {
-        font-size: 14px;
-        color: #666666;
-    }
+        .hero-subtitle {
+            font-size: 1rem;
+            opacity: 0.68;
+            margin-top: 0.5rem;
+        }
 
-    .status-value {
-        font-size: 28px;
-        font-weight: 700;
-        margin-top: 5px;
-    }
+        .live-pill {
+            display: inline-block;
+            padding: 0.35rem 0.75rem;
+            border-radius: 999px;
+            border: 1px solid rgba(40,160,90,0.28);
+            background: rgba(40,160,90,0.10);
+            font-size: 0.78rem;
+            font-weight: 700;
+        }
 
-    .section-title {
-        font-size: 25px;
-        font-weight: 650;
-        margin-top: 15px;
-        margin-bottom: 10px;
-    }
+        .panel {
+            padding: 1rem 1.05rem;
+            border: 1px solid rgba(128,128,128,0.16);
+            border-radius: 16px;
+            background: rgba(255,255,255,0.72);
+        }
 
+        .panel-title {
+            font-size: 1.12rem;
+            font-weight: 750;
+            margin-bottom: 0.65rem;
+        }
+
+        .panel-caption {
+            font-size: 0.84rem;
+            opacity: 0.62;
+        }
+
+        .risk-card {
+            padding: 0.85rem 0.9rem;
+            border-radius: 14px;
+            border: 1px solid rgba(128,128,128,0.16);
+            margin-bottom: 0.55rem;
+        }
+
+        .risk-road {
+            font-weight: 750;
+            font-size: 0.95rem;
+        }
+
+        .risk-meta {
+            font-size: 0.80rem;
+            opacity: 0.66;
+            margin-top: 0.2rem;
+        }
+
+        .flow-box {
+            text-align: center;
+            padding: 0.9rem 0.5rem;
+            border-radius: 14px;
+            border: 1px solid rgba(128,128,128,0.16);
+            min-height: 92px;
+        }
+
+        .flow-icon {
+            font-size: 1.35rem;
+        }
+
+        .flow-title {
+            font-weight: 750;
+            font-size: 0.90rem;
+            margin-top: 0.25rem;
+        }
+
+        .flow-caption {
+            font-size: 0.73rem;
+            opacity: 0.60;
+        }
+
+        .insight {
+            padding: 0.75rem 0.9rem;
+            border-left: 4px solid rgba(80,100,180,0.65);
+            border-radius: 8px;
+            background: rgba(80,100,180,0.06);
+            margin-bottom: 0.55rem;
+        }
     </style>
     """,
-    unsafe_allow_html=True
+    unsafe_allow_html=True,
 )
 
 
 # ============================================================
-# SNOWFLAKE CONNECTION
+# SNOWFLAKE
 # ============================================================
 
 @st.cache_resource
 def get_connection():
-
     return snowflake.connector.connect(
         account=os.getenv("SNOWFLAKE_ACCOUNT"),
         user=os.getenv("SNOWFLAKE_USER"),
@@ -92,38 +163,21 @@ def get_connection():
         warehouse=os.getenv("SNOWFLAKE_WAREHOUSE"),
         database=os.getenv("SNOWFLAKE_DATABASE"),
         schema=os.getenv("SNOWFLAKE_SCHEMA"),
-        role=os.getenv("SNOWFLAKE_ROLE")
+        role=os.getenv("SNOWFLAKE_ROLE"),
     )
 
 
-# ============================================================
-# QUERY FUNCTION
-# ============================================================
-
 @st.cache_data(ttl=30)
 def run_query(query):
-
     conn = get_connection()
-
     cursor = conn.cursor()
-
-    cursor.execute(query)
-
-    rows = cursor.fetchall()
-
-    columns = [column[0] for column in cursor.description]
-
-    cursor.close()
-
-    return pd.DataFrame(rows, columns=columns)
-
-
-# ============================================================
-# REFRESH FUNCTION
-# ============================================================
-
-if "refresh_counter" not in st.session_state:
-    st.session_state.refresh_counter = 0
+    try:
+        cursor.execute(query)
+        rows = cursor.fetchall()
+        columns = [column[0] for column in cursor.description]
+        return pd.DataFrame(rows, columns=columns)
+    finally:
+        cursor.close()
 
 
 # ============================================================
@@ -131,166 +185,112 @@ if "refresh_counter" not in st.session_state:
 # ============================================================
 
 st.sidebar.title("🚦 Traffic Intelligence")
+st.sidebar.caption("Operations dashboard")
 
 st.sidebar.markdown(
     """
-    ### System
-    **City:** Hyderabad
-    **Platform:** Real-Time Traffic Intelligence
-
-    ### Technology
-    - Python
-    - Apache Kafka
-    - Snowflake
-    - Snowflake Streams & Tasks
-    - Random Forest
-    - Isolation Forest
-    - Streamlit
+    **City:** Hyderabad  
+    **Road segments:** 5  
+    **Mode:** Near real-time
     """
 )
 
-st.sidebar.divider()
-
 if st.sidebar.button("🔄 Refresh Dashboard", width="stretch"):
-
     st.cache_data.clear()
-
     st.rerun()
 
+st.sidebar.divider()
 
-st.sidebar.info(
-    "Dashboard refresh interval: approximately 30 seconds."
+st.sidebar.markdown(
+    """
+    **Platform**
+
+    Python · Kafka · Snowflake · dbt ·
+    Isolation Forest · Random Forest · Streamlit
+    """
 )
+
+st.sidebar.info("Data refresh uses a ~30 second cache. Use Refresh for an immediate update.")
 
 
 # ============================================================
-# HEADER
-# ============================================================
-
-st.markdown(
-    '<div class="main-title">🚦 Real-Time Smart City Traffic Intelligence</div>',
-    unsafe_allow_html=True
-)
-
-st.markdown(
-    '<div class="subtitle">'
-    'Hyderabad traffic monitoring, anomaly detection and 15-minute congestion prediction'
-    '</div>',
-    unsafe_allow_html=True
-)
-
-
-# ============================================================
-# CURRENT TRAFFIC QUERY
+# DATA QUERIES
 # ============================================================
 
 current_query = """
-
 SELECT
-    event_timestamp,
-    road_id,
-    road_name,
-    city,
-    latitude,
-    longitude,
-    vehicle_count,
-    average_speed_kmh,
-    occupancy_percent,
-    weather_condition,
-    temperature_c,
-    rainfall_mm,
-    incident_flag,
-    congestion_level
-
-FROM TRAFFIC_DB.GOLD.FACT_TRAFFIC
-
+    f.EVENT_TIMESTAMP,
+    f.ROAD_ID,
+    f.ROAD_NAME,
+    f.CITY,
+    f.LATITUDE,
+    f.LONGITUDE,
+    f.VEHICLE_COUNT,
+    f.AVERAGE_SPEED_KMH,
+    f.OCCUPANCY_PERCENT,
+    f.WEATHER_CONDITION,
+    f.TEMPERATURE_C,
+    f.RAINFALL_MM,
+    f.INCIDENT_FLAG,
+    f.CONGESTION_LEVEL,
+    b.TYPICAL_VEHICLE_COUNT,
+    b.TYPICAL_SPEED,
+    b.TYPICAL_OCCUPANCY
+FROM TRAFFIC_DB.GOLD.FACT_TRAFFIC f
+LEFT JOIN TRAFFIC_DB.GOLD.TRAFFIC_ROAD_HOURLY_BASELINES b
+    ON f.ROAD_ID = b.ROAD_ID
+   AND EXTRACT(HOUR FROM f.EVENT_TIMESTAMP) = b.HOUR_OF_DAY
 QUALIFY ROW_NUMBER() OVER (
-    PARTITION BY road_id
-    ORDER BY event_timestamp DESC
+    PARTITION BY f.ROAD_ID
+    ORDER BY f.EVENT_TIMESTAMP DESC
 ) = 1
-
-ORDER BY road_id
-
+ORDER BY f.ROAD_ID
 """
-
-current_df = run_query(current_query)
-
-
-# ============================================================
-# PREDICTION QUERY
-# ============================================================
 
 prediction_query = """
-
 SELECT
-    road_id,
-    road_name,
-    predicted_congestion_level,
-    prediction_confidence,
-    prediction_timestamp
-
+    ROAD_ID,
+    ROAD_NAME,
+    PREDICTED_CONGESTION_LEVEL,
+    PREDICTION_CONFIDENCE,
+    PREDICTION_TIMESTAMP
 FROM TRAFFIC_DB.GOLD.TRAFFIC_CONGESTION_PREDICTIONS
-
 QUALIFY ROW_NUMBER() OVER (
-    PARTITION BY road_id
-    ORDER BY prediction_timestamp DESC
+    PARTITION BY ROAD_ID
+    ORDER BY PREDICTION_TIMESTAMP DESC
 ) = 1
-
-ORDER BY road_id
-
+ORDER BY ROAD_ID
 """
-
-prediction_df = run_query(prediction_query)
-
-
-# ============================================================
-# ANOMALY QUERY
-# ============================================================
 
 anomaly_query = """
-
 SELECT
-    event_id,
-    event_timestamp,
-    road_id,
-    road_name,
-    vehicle_count,
-    average_speed_kmh,
-    occupancy_percent,
-    anomaly_flag,
-    anomaly_score
-
-FROM TRAFFIC_DB.GOLD.TRAFFIC_ANOMALIES
-
-WHERE anomaly_flag = 1
-
-ORDER BY event_timestamp DESC
-
-LIMIT 20
-
-"""
-
-anomaly_df = run_query(anomaly_query)
-
-# Total anomaly count for KPI (separate from the 20-row display query)
-anomaly_count_query = """
-SELECT COUNT(*) AS TOTAL_ANOMALIES
+    EVENT_TIMESTAMP,
+    ROAD_ID,
+    ROAD_NAME,
+    VEHICLE_COUNT,
+    AVERAGE_SPEED_KMH,
+    OCCUPANCY_PERCENT,
+    ANOMALY_SCORE
 FROM TRAFFIC_DB.GOLD.TRAFFIC_ANOMALIES
 WHERE ANOMALY_FLAG = 1
+ORDER BY EVENT_TIMESTAMP DESC
+LIMIT 20
 """
 
-anomaly_count_df = run_query(anomaly_count_query)
-
-total_anomalies = (
-    int(anomaly_count_df["TOTAL_ANOMALIES"].iloc[0])
-    if not anomaly_count_df.empty
-    else 0
-)
-
-
-# ============================================================
-# PIPELINE HEALTH QUERY
-# ============================================================
+recent_anomaly_query = """
+SELECT
+    COUNT(*) AS RECENT_ANOMALIES
+FROM TRAFFIC_DB.GOLD.TRAFFIC_ANOMALIES
+WHERE ANOMALY_FLAG = 1
+  AND EVENT_TIMESTAMP >= (
+      SELECT DATEADD(
+          minute,
+          -30,
+          MAX(EVENT_TIMESTAMP)
+      )
+      FROM TRAFFIC_DB.GOLD.FACT_TRAFFIC
+  )
+"""
 
 pipeline_health_query = """
 SELECT
@@ -310,51 +310,61 @@ SELECT
 FROM TRAFFIC_DB.GOLD.VW_PIPELINE_HEALTH
 """
 
+current_df = run_query(current_query)
+prediction_df = run_query(prediction_query)
+anomaly_df = run_query(anomaly_query)
+recent_anomaly_df = run_query(recent_anomaly_query)
 pipeline_health_df = run_query(pipeline_health_query)
 
 
-# ============================================================
-# CHECK DATA
-# ============================================================
-
 if current_df.empty:
-
-    st.warning(
-        "No current traffic data is available in "
-        "TRAFFIC_DB.GOLD.FACT_TRAFFIC."
-    )
-
+    st.warning("No current traffic data is available in TRAFFIC_DB.GOLD.FACT_TRAFFIC.")
     st.stop()
 
 
 # ============================================================
-# KPI CALCULATIONS
+# NORMALIZE / DERIVED METRICS
 # ============================================================
 
-total_vehicles = int(
-    current_df["VEHICLE_COUNT"].sum()
+current_df["SPEED_DEVIATION"] = (
+    current_df["AVERAGE_SPEED_KMH"] - current_df["TYPICAL_SPEED"]
 )
 
-average_speed = round(
-    current_df["AVERAGE_SPEED_KMH"].mean(),
-    2
+current_df["VEHICLE_DEVIATION"] = (
+    current_df["VEHICLE_COUNT"] - current_df["TYPICAL_VEHICLE_COUNT"]
 )
 
-average_occupancy = round(
-    current_df["OCCUPANCY_PERCENT"].mean(),
-    2
+current_df["OCCUPANCY_DEVIATION"] = (
+    current_df["OCCUPANCY_PERCENT"] - current_df["TYPICAL_OCCUPANCY"]
 )
+
+severity_rank = {"LOW": 1, "MEDIUM": 2, "HIGH": 3}
+
+current_df["SEVERITY_SCORE"] = (
+    current_df["CONGESTION_LEVEL"].map(severity_rank).fillna(0)
+    + (current_df["SPEED_DEVIATION"] < 0).astype(int) * 0.25
+    + (current_df["OCCUPANCY_DEVIATION"] > 0).astype(int) * 0.20
+)
+
+total_vehicles = int(current_df["VEHICLE_COUNT"].sum())
+average_speed = round(current_df["AVERAGE_SPEED_KMH"].mean(), 2)
+average_occupancy = round(current_df["OCCUPANCY_PERCENT"].mean(), 2)
 
 congested_roads = int(
-    current_df["CONGESTION_LEVEL"]
-    .isin(["MEDIUM", "HIGH"])
-    .sum()
+    current_df["CONGESTION_LEVEL"].isin(["MEDIUM", "HIGH"]).sum()
 )
 
 high_congestion_roads = int(
-    (current_df["CONGESTION_LEVEL"] == "HIGH")
-    .sum()
+    (current_df["CONGESTION_LEVEL"] == "HIGH").sum()
 )
+
+prediction_risk_roads = 0
+if not prediction_df.empty:
+    prediction_risk_roads = int(
+        prediction_df["PREDICTED_CONGESTION_LEVEL"]
+        .isin(["MEDIUM", "HIGH"])
+        .sum()
+    )
 
 anomaly_count_query = """
 SELECT COUNT(*) AS TOTAL_ANOMALIES
@@ -370,118 +380,183 @@ total_anomalies = (
     else 0
 )
 
+if not recent_anomaly_df.empty:
+    recent_anomalies = int(
+        recent_anomaly_df["RECENT_ANOMALIES"].iloc[0]
+    )
+else:
+    recent_anomalies = 0
+
 
 # ============================================================
-# KPI SECTION
+# HEADER
 # ============================================================
+
+latest_gold = current_df["EVENT_TIMESTAMP"].max()
 
 st.markdown(
-    '<div class="section-title">📊 Current Traffic Overview</div>',
-    unsafe_allow_html=True
+    f"""
+    <div class="hero">
+        <div class="hero-kicker">SMART CITY TRAFFIC INTELLIGENCE</div>
+        <div style="display:flex;justify-content:space-between;gap:1rem;align-items:flex-start;flex-wrap:wrap;">
+            <div>
+                <div class="hero-title">Real-Time Mobility Operations</div>
+                <div class="hero-subtitle">
+                    Hyderabad · 5 project/simulation road segments · traffic, anomaly and 15-minute forecast intelligence
+                </div>
+            </div>
+            <div style="text-align:right;">
+                <span class="live-pill">● LIVE</span>
+                <div class="panel-caption" style="margin-top:0.45rem;">
+                    Latest GOLD event<br>{latest_gold}
+                </div>
+            </div>
+        </div>
+    </div>
+    """,
+    unsafe_allow_html=True,
 )
 
-col1, col2, col3, col4, col5 = st.columns(5)
 
+# ============================================================
+# KPI ROW
+# ============================================================
 
-with col1:
+st.markdown("### 📊 Current Situation")
 
-    st.metric(
-        "🚗 Total Vehicles",
-        f"{total_vehicles:,}"
-    )
+k1, k2, k3, k4, k5 = st.columns(5)
 
+with k1:
+    st.metric("🚗 Vehicles", f"{total_vehicles:,}", help="Sum of vehicles across the latest event for each monitored road.")
 
-with col2:
+with k2:
+    st.metric("⚡ Avg Speed", f"{average_speed} km/h")
 
-    st.metric(
-        "⚡ Average Speed",
-        f"{average_speed} km/h"
-    )
+with k3:
+    st.metric("🛣️ Congested Roads", f"{congested_roads}/{len(current_df)}")
 
+with k4:
+    st.metric("🚨 Active Anomalies", f"{total_anomalies:,}", help="Traffic observations classified as anomalies by Isolation Forest.")
 
-with col3:
-
-    st.metric(
-        "📊 Avg Occupancy",
-        f"{average_occupancy}%"
-    )
-
-
-with col4:
-
-    st.metric(
-        "🚦 Congested Roads",
-        congested_roads
-    )
-
-
-with col5:
-
-    st.metric(
-        "🚨 Anomalies",
-        total_anomalies
-    )
-
+with k5:
+    st.metric("🔮 15-Min Risk", f"{prediction_risk_roads}/{len(prediction_df)}" if not prediction_df.empty else "N/A")
 
 st.divider()
+
+
+# ============================================================
+# TRAFFIC SITUATION + ROADS TO WATCH
+# ============================================================
+
+left, right = st.columns([1.05, 1.25])
+
+with left:
+    st.markdown(
+        '<div class="panel"><div class="panel-title">🚦 Traffic Situation</div>',
+        unsafe_allow_html=True,
+    )
+
+    status_counts = (
+        current_df["CONGESTION_LEVEL"]
+        .value_counts()
+        .reindex(["LOW", "MEDIUM", "HIGH"], fill_value=0)
+    )
+
+    situation_df = status_counts.rename("Roads").to_frame()
+    st.bar_chart(situation_df, horizontal=True, width="stretch")
+
+    st.caption(
+        f"{high_congestion_roads} road(s) currently classified HIGH · "
+        f"{congested_roads} road(s) at MEDIUM/HIGH."
+    )
+
+    st.markdown("</div>", unsafe_allow_html=True)
+
+
+with right:
+    st.markdown(
+        '<div class="panel"><div class="panel-title">👀 Roads to Watch</div>',
+        unsafe_allow_html=True,
+    )
+
+    watch_df = (
+        current_df[
+            [
+                "ROAD_NAME",
+                "CONGESTION_LEVEL",
+                "AVERAGE_SPEED_KMH",
+                "SPEED_DEVIATION",
+                "OCCUPANCY_PERCENT",
+            ]
+        ]
+        .copy()
+    )
+
+    watch_df["SEVERITY_RANK"] = (
+        watch_df["CONGESTION_LEVEL"]
+        .map(severity_rank)
+        .fillna(0)
+    )
+
+    watch_df = (
+        watch_df
+        .sort_values(
+            ["SEVERITY_RANK", "SPEED_DEVIATION", "OCCUPANCY_PERCENT"],
+            ascending=[False, True, False],
+        )
+        .head(5)
+    )
+
+    for _, row in watch_df.iterrows():
+        st.markdown(
+            f"""
+            <div class="risk-card">
+                <div class="risk-road">{row["ROAD_NAME"]} · {row["CONGESTION_LEVEL"]}</div>
+                <div class="risk-meta">
+                    Speed {row["AVERAGE_SPEED_KMH"]:.1f} km/h ·
+                    Occupancy {row["OCCUPANCY_PERCENT"]:.1f}% ·
+                    Δ speed vs baseline {row["SPEED_DEVIATION"]:+.1f} km/h
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+    st.markdown("</div>", unsafe_allow_html=True)
 
 
 # ============================================================
 # PIPELINE HEALTH
 # ============================================================
 
-st.markdown(
-    '<div class="section-title">⚙️ Pipeline Health</div>',
-    unsafe_allow_html=True
-)
+st.markdown("### ⚙️ Platform Health")
 
 if not pipeline_health_df.empty:
 
     health = pipeline_health_df.iloc[0]
-
-    health_col1, health_col2, health_col3, health_col4, health_col5 = st.columns(5)
-
-    with health_col1:
-        st.metric(
-            "RAW Events",
-            f"{int(health['RAW_EVENTS']):,}"
-        )
-
-    with health_col2:
-        st.metric(
-            "STAGING Events",
-            f"{int(health['STAGING_EVENTS']):,}"
-        )
-
-    with health_col3:
-        st.metric(
-            "GOLD Events",
-            f"{int(health['GOLD_EVENTS']):,}"
-        )
-
-    with health_col4:
-        st.metric(
-            "Anomaly Results",
-            f"{int(health['ANOMALY_RESULTS']):,}"
-        )
-
-    with health_col5:
-        st.metric(
-            "Predictions",
-            f"{int(health['PREDICTIONS']):,}"
-        )
-
-    # Pipeline status and RAW → GOLD lag
     status = str(health["PIPELINE_STATUS"])
-    lag_seconds = health["RAW_TO_GOLD_LAG_SECONDS"]
 
-    if pd.isna(lag_seconds):
+    if pd.isna(health["RAW_TO_GOLD_LAG_SECONDS"]):
         lag_display = "N/A"
     else:
-        # Lag represents how far GOLD is behind RAW.
-        # Never display a negative lag to dashboard users.
-        lag_seconds = max(0, int(lag_seconds))
-        lag_display = f"{lag_seconds:,} sec"
+        lag_display = f"{max(0, int(health['RAW_TO_GOLD_LAG_SECONDS'])):,} sec"
+
+    hp1, hp2, hp3, hp4, hp5 = st.columns(5)
+
+    with hp1:
+        st.metric("RAW", f"{int(health['RAW_EVENTS']):,}")
+
+    with hp2:
+        st.metric("STAGING", f"{int(health['STAGING_EVENTS']):,}")
+
+    with hp3:
+        st.metric("GOLD", f"{int(health['GOLD_EVENTS']):,}")
+
+    with hp4:
+        st.metric("Anomaly Results", f"{int(health['ANOMALY_RESULTS']):,}")
+
+    with hp5:
+        st.metric("Predictions", f"{int(health['PREDICTIONS']):,}")
 
     status_col, lag_col = st.columns(2)
 
@@ -494,73 +569,57 @@ if not pipeline_health_df.empty:
             st.error(f"**Pipeline Status:** {status}")
 
     with lag_col:
-        st.info(
-            f"**RAW → GOLD Lag:** {lag_display}"
-        )
+        st.info(f"**RAW → GOLD Lag:** {lag_display}")
 
-    st.write("### Pipeline Freshness")
+    flow = st.columns(7)
+    flow_items = [
+        ("🐍", "Python", "Events"),
+        ("📨", "Kafka", "Stream"),
+        ("🧊", "RAW", "Landing"),
+        ("⚙️", "STAGING", "Clean"),
+        ("💎", "GOLD", "Curated"),
+        ("🤖", "ML", "Inference"),
+        ("📊", "Dashboard", "Insights"),
+    ]
 
-    freshness_col1, freshness_col2, freshness_col3 = st.columns(3)
+    for col, (icon, title, caption) in zip(flow, flow_items):
+        with col:
+            st.markdown(
+                f"""
+                <div class="flow-box">
+                    <div class="flow-icon">{icon}</div>
+                    <div class="flow-title">{title}</div>
+                    <div class="flow-caption">{caption}</div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
 
-    with freshness_col1:
+    f1, f2, f3, f4, f5 = st.columns(5)
 
-        st.info(
-            f"**Latest RAW Event**\n\n"
-            f"{health['LATEST_RAW_EVENT']}"
-        )
+    freshness_items = [
+        ("RAW", health["LATEST_RAW_EVENT"]),
+        ("STAGING", health["LATEST_STAGING_EVENT"]),
+        ("GOLD", health["LATEST_GOLD_EVENT"]),
+        ("Anomaly", health["LATEST_ANOMALY_DETECTION"]),
+        ("Prediction", health["LATEST_PREDICTION"]),
+    ]
 
-    with freshness_col2:
-
-        st.info(
-            f"**Latest STAGING Event**\n\n"
-            f"{health['LATEST_STAGING_EVENT']}"
-        )
-
-    with freshness_col3:
-
-        st.info(
-            f"**Latest GOLD Event**\n\n"
-            f"{health['LATEST_GOLD_EVENT']}"
-        )
-
-    ml_col1, ml_col2 = st.columns(2)
-
-    with ml_col1:
-
-        st.info(
-            f"**Latest Anomaly Detection**\n\n"
-            f"{health['LATEST_ANOMALY_DETECTION']}"
-        )
-
-    with ml_col2:
-
-        st.info(
-            f"**Latest Prediction**\n\n"
-            f"{health['LATEST_PREDICTION']}"
-        )
+    for col, (label, value) in zip([f1, f2, f3, f4, f5], freshness_items):
+        with col:
+            st.caption(label)
+            st.write(value)
 
 else:
-
     st.warning("Pipeline health information is currently unavailable.")
 
 
+# ============================================================
+# ROAD DETAILS
+# ============================================================
+
 st.divider()
-
-
-# ============================================================
-# ROAD STATUS
-# ============================================================
-
-
-# ============================================================
-# ROAD STATUS
-# ============================================================
-
-st.markdown(
-    '<div class="section-title">🛣️ Current Road Status</div>',
-    unsafe_allow_html=True
-)
-
+st.markdown("### 🛣️ Current Road Status")
 
 road_display = current_df[
     [
@@ -571,10 +630,9 @@ road_display = current_df[
         "OCCUPANCY_PERCENT",
         "WEATHER_CONDITION",
         "INCIDENT_FLAG",
-        "CONGESTION_LEVEL"
+        "CONGESTION_LEVEL",
     ]
 ].copy()
-
 
 road_display.columns = [
     "Road ID",
@@ -584,84 +642,92 @@ road_display.columns = [
     "Occupancy (%)",
     "Weather",
     "Incident",
-    "Congestion"
+    "Congestion",
 ]
-
 
 st.dataframe(
     road_display,
-    width=1200,
-    height=300,
-    hide_index=True
+    width="stretch",
+    height=290,
+    hide_index=True,
 )
 
 
 # ============================================================
-# STATUS SUMMARY
+# "WHY IS TRAFFIC CHANGING?"
 # ============================================================
+
+st.divider()
+st.markdown("### 🔎 Why Is Traffic Changing?")
+
+worst = current_df.sort_values(
+    ["SEVERITY_SCORE", "SPEED_DEVIATION", "OCCUPANCY_DEVIATION"],
+    ascending=[False, True, False],
+).iloc[0]
+
+why1, why2, why3 = st.columns(3)
+
+with why1:
+    vehicle_delta = float(worst["VEHICLE_DEVIATION"])
+    st.metric(
+        "🚗 Vehicle Volume",
+        f"{int(worst['VEHICLE_COUNT']):,}",
+        f"{vehicle_delta:+.0f} vs baseline",
+    )
+
+with why2:
+    st.metric(
+        "⚡ Speed",
+        f"{worst['AVERAGE_SPEED_KMH']:.1f} km/h",
+        f"{worst['SPEED_DEVIATION']:+.1f} km/h vs baseline",
+    )
+
+with why3:
+    st.metric(
+        "📊 Occupancy",
+        f"{worst['OCCUPANCY_PERCENT']:.1f}%",
+        f"{worst['OCCUPANCY_DEVIATION']:+.1f} pts vs baseline",
+    )
+
+reason_parts = []
+
+if worst["VEHICLE_DEVIATION"] > 0:
+    reason_parts.append(
+        f"vehicle volume is {worst['VEHICLE_DEVIATION']:.0f} above the road/hour baseline"
+    )
+
+if worst["SPEED_DEVIATION"] < 0:
+    reason_parts.append(
+        f"speed is {abs(worst['SPEED_DEVIATION']):.1f} km/h below baseline"
+    )
+
+if worst["OCCUPANCY_DEVIATION"] > 0:
+    reason_parts.append(
+        f"occupancy is {worst['OCCUPANCY_DEVIATION']:.1f} percentage points above baseline"
+    )
+
+if float(worst["RAINFALL_MM"]) > 0:
+    reason_parts.append(
+        f"rainfall is {float(worst['RAINFALL_MM']):.1f} mm"
+    )
+
+if bool(worst["INCIDENT_FLAG"]):
+    reason_parts.append("an incident flag is active")
+
+if reason_parts:
+    reason_text = "; ".join(reason_parts)
+else:
+    reason_text = "Current measurements are close to the historical road/hour baseline."
 
 st.markdown(
-    '<div class="section-title">🚦 Congestion Status</div>',
-    unsafe_allow_html=True
+    f"""
+    <div class="insight">
+        <b>{worst["ROAD_NAME"]}</b> is the road with the strongest current watch signal.
+        {reason_text.capitalize()}.
+    </div>
+    """,
+    unsafe_allow_html=True,
 )
-
-
-status_counts = (
-    current_df["CONGESTION_LEVEL"]
-    .value_counts()
-    .to_dict()
-)
-
-
-status_col1, status_col2, status_col3 = st.columns(3)
-
-
-with status_col1:
-
-    st.markdown(
-        f"""
-        <div class="status-card">
-            <div class="status-title">🟢 LOW</div>
-            <div class="status-value">
-                {status_counts.get("LOW", 0)}
-            </div>
-            <div class="status-title">Roads</div>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-
-with status_col2:
-
-    st.markdown(
-        f"""
-        <div class="status-card">
-            <div class="status-title">🟡 MEDIUM</div>
-            <div class="status-value">
-                {status_counts.get("MEDIUM", 0)}
-            </div>
-            <div class="status-title">Roads</div>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-
-with status_col3:
-
-    st.markdown(
-        f"""
-        <div class="status-card">
-            <div class="status-title">🔴 HIGH</div>
-            <div class="status-value">
-                {status_counts.get("HIGH", 0)}
-            </div>
-            <div class="status-title">Roads</div>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
 
 
 # ============================================================
@@ -670,81 +736,82 @@ with status_col3:
 
 tab1, tab2, tab3, tab4 = st.tabs(
     [
-        "🔮 15-Min Prediction",
-        "🚨 Anomalies",
+        "🔮 15-Min Forecast",
+        "🚨 Anomaly Monitor",
         "📈 Traffic Trends",
-        "🗺️ Traffic Map"
+        "🗺️ Traffic Map",
     ]
 )
 
 
 # ============================================================
-# TAB 1 — PREDICTION
+# TAB 1 — FORECAST
 # ============================================================
 
 with tab1:
 
-    st.markdown(
-        '<div class="section-title">'
-        '🔮 15-Minute Congestion Prediction'
-        '</div>',
-        unsafe_allow_html=True
-    )
+    st.markdown("#### 🔮 15-Minute Congestion Forecast")
 
     if prediction_df.empty:
 
-        st.warning(
-            "No congestion predictions are currently available."
-        )
+        st.warning("No congestion predictions are currently available.")
 
     else:
 
-        display_prediction = prediction_df.copy()
+        forecast = prediction_df.copy()
 
-        display_prediction[
-            "PREDICTION_CONFIDENCE"
-        ] = (
-            display_prediction[
-                "PREDICTION_CONFIDENCE"
-            ] * 100
-        ).round(2)
+        forecast["CONFIDENCE_%"] = (
+            forecast["PREDICTION_CONFIDENCE"] * 100
+        ).round(1)
 
-        display_prediction[
-            "PREDICTION_TIMESTAMP"
-        ] = pd.to_datetime(
-            display_prediction[
-                "PREDICTION_TIMESTAMP"
-            ]
+        forecast["PREDICTION_TIMESTAMP"] = pd.to_datetime(
+            forecast["PREDICTION_TIMESTAMP"]
         ).dt.strftime("%Y-%m-%d %H:%M:%S")
 
-        display_prediction = display_prediction[
+        forecast_display = forecast[
             [
                 "ROAD_ID",
                 "ROAD_NAME",
                 "PREDICTED_CONGESTION_LEVEL",
-                "PREDICTION_CONFIDENCE",
-                "PREDICTION_TIMESTAMP"
+                "CONFIDENCE_%",
+                "PREDICTION_TIMESTAMP",
             ]
-        ]
+        ].copy()
 
-        display_prediction.columns = [
+        forecast_display.columns = [
             "Road ID",
             "Road Name",
             "Predicted Congestion",
             "Confidence (%)",
-            "Prediction Time"
+            "Prediction Time",
         ]
 
         st.dataframe(
-            display_prediction,
-            width=1200,
-            height=300,
-            hide_index=True
+            forecast_display,
+            width="stretch",
+            height=290,
+            hide_index=True,
         )
 
+        risk_count = int(
+            forecast["PREDICTED_CONGESTION_LEVEL"]
+            .isin(["MEDIUM", "HIGH"])
+            .sum()
+        )
+
+        if risk_count:
+            st.warning(
+                f"{risk_count} of {len(forecast)} roads are predicted to be MEDIUM/HIGH "
+                "within approximately 15 minutes."
+            )
+        else:
+            st.success(
+                "No MEDIUM/HIGH congestion prediction is currently present."
+            )
+
         st.caption(
-            "The Random Forest model predicts the expected "
-            "congestion class approximately 15 minutes ahead."
+            "The enhanced Random Forest model uses current traffic conditions, "
+            "time context and road/hour historical baselines."
         )
 
 
@@ -754,39 +821,26 @@ with tab1:
 
 with tab2:
 
-    st.markdown(
-        '<div class="section-title">'
-        '🚨 Recent Traffic Anomalies'
-        '</div>',
-        unsafe_allow_html=True
-    )
+    st.markdown("#### 🚨 Anomaly Monitor")
+
+    anomaly_kpi1, anomaly_kpi2 = st.columns(2)
+
+    with anomaly_kpi1:
+        st.metric("Total Classified Anomalies", f"{total_anomalies:,}")
+
+    with anomaly_kpi2:
+        st.metric("Anomalies in Recent 30 Min", recent_anomalies)
 
     if anomaly_df.empty:
 
-        st.success(
-            "No traffic anomalies detected."
-        )
+        st.success("No traffic anomalies detected.")
 
     else:
 
-        display_anomalies = anomaly_df[
-            [
-                "EVENT_TIMESTAMP",
-                "ROAD_ID",
-                "ROAD_NAME",
-                "VEHICLE_COUNT",
-                "AVERAGE_SPEED_KMH",
-                "OCCUPANCY_PERCENT",
-                "ANOMALY_SCORE"
-            ]
-        ].copy()
+        display_anomalies = anomaly_df.copy()
 
-        display_anomalies[
-            "EVENT_TIMESTAMP"
-        ] = pd.to_datetime(
-            display_anomalies[
-                "EVENT_TIMESTAMP"
-            ]
+        display_anomalies["EVENT_TIMESTAMP"] = pd.to_datetime(
+            display_anomalies["EVENT_TIMESTAMP"]
         ).dt.strftime("%Y-%m-%d %H:%M:%S")
 
         display_anomalies.columns = [
@@ -796,115 +850,94 @@ with tab2:
             "Vehicles",
             "Avg Speed",
             "Occupancy (%)",
-            "Anomaly Score"
+            "Anomaly Score",
         ]
 
         st.dataframe(
             display_anomalies,
-            width=1200,
-            height=450,
-            hide_index=True
+            width="stretch",
+            height=420,
+            hide_index=True,
         )
 
         st.caption(
-            "Isolation Forest identifies traffic observations "
-            "that differ significantly from normal traffic patterns."
+            "Isolation Forest flags traffic observations that differ significantly "
+            "from learned normal traffic behavior."
         )
 
 
 # ============================================================
-# TAB 3 — TRAFFIC TRENDS
+# TAB 3 — TRENDS
 # ============================================================
 
 with tab3:
 
-    st.markdown(
-        '<div class="section-title">'
-        '📈 Traffic Trends'
-        '</div>',
-        unsafe_allow_html=True
-    )
+    st.markdown("#### 📈 Recent Traffic Trends")
 
     analytics_query = """
-
     SELECT
-        event_timestamp,
-        road_name,
-        vehicle_count,
-        average_speed_kmh,
-        occupancy_percent
-
+        EVENT_TIMESTAMP,
+        VEHICLE_COUNT,
+        AVERAGE_SPEED_KMH,
+        OCCUPANCY_PERCENT
     FROM TRAFFIC_DB.GOLD.FACT_TRAFFIC
-
-    WHERE event_timestamp >= (
+    WHERE EVENT_TIMESTAMP >= (
         SELECT DATEADD(
             hour,
             -3,
-            MAX(event_timestamp)
+            MAX(EVENT_TIMESTAMP)
         )
         FROM TRAFFIC_DB.GOLD.FACT_TRAFFIC
     )
-
-    ORDER BY event_timestamp
-
+    ORDER BY EVENT_TIMESTAMP
     """
 
-    analytics_df = run_query(
-        analytics_query
-    )
+    analytics_df = run_query(analytics_query)
 
     if analytics_df.empty:
 
-        st.warning(
-            "No traffic trend data is available."
-        )
+        st.warning("No traffic trend data is available.")
 
     else:
 
-        analytics_df[
-            "EVENT_TIMESTAMP"
-        ] = pd.to_datetime(
-            analytics_df[
-                "EVENT_TIMESTAMP"
-            ]
+        analytics_df["EVENT_TIMESTAMP"] = pd.to_datetime(
+            analytics_df["EVENT_TIMESTAMP"]
         )
 
-        # --------------------------------------------
-        # Vehicle Count
-        # --------------------------------------------
-
-        st.write("### 🚗 Vehicle Count Over Time")
-
-        vehicle_chart = (
+        traffic_trend = (
             analytics_df
             .set_index("EVENT_TIMESTAMP")
-            .resample("5min")["VEHICLE_COUNT"]
-            .sum()
-            .to_frame(name="VEHICLE_COUNT")
+            .resample("5min")
+            .agg(
+                {
+                    "VEHICLE_COUNT": "sum",
+                    "AVERAGE_SPEED_KMH": "mean",
+                    "OCCUPANCY_PERCENT": "mean",
+                }
+            )
+            .dropna(how="all")
         )
 
+        trend_left, trend_right = st.columns(2)
+
+        with trend_left:
+            st.write("**Vehicle Volume — 5 Minute Windows**")
+            st.line_chart(
+                traffic_trend[["VEHICLE_COUNT"]],
+                width="stretch",
+            )
+
+        with trend_right:
+            st.write("**Average Speed — 5 Minute Windows**")
+            st.line_chart(
+                traffic_trend[["AVERAGE_SPEED_KMH"]],
+                width="stretch",
+            )
+
+        st.write("**Average Occupancy — 5 Minute Windows**")
         st.line_chart(
-            vehicle_chart,
-            width="stretch"
-        )
-
-        # --------------------------------------------
-        # Average Speed
-        # --------------------------------------------
-
-        st.write("### ⚡ Average Speed Over Time")
-
-        speed_chart = (
-            analytics_df
-            .set_index("EVENT_TIMESTAMP")
-            .resample("5min")["AVERAGE_SPEED_KMH"]
-            .mean()
-            .to_frame(name="AVERAGE_SPEED_KMH")
-        )
-
-        st.line_chart(
-            speed_chart,
-            width="stretch"
+            traffic_trend[["OCCUPANCY_PERCENT"]],
+            width="stretch",
         )
 
 
@@ -914,68 +947,32 @@ with tab3:
 
 with tab4:
 
-    st.markdown(
-        '<div class="section-title">'
-        '🗺️ Hyderabad Traffic Road Segments'
-        '</div>',
-        unsafe_allow_html=True
-    )
+    st.markdown("#### 🗺️ Hyderabad Project Road Segments")
 
     map_data = current_df[
-        [
-            "LATITUDE",
-            "LONGITUDE"
-        ]
+        ["LATITUDE", "LONGITUDE", "ROAD_NAME", "CONGESTION_LEVEL"]
     ].copy()
 
     map_data.columns = [
         "latitude",
-        "longitude"
+        "longitude",
+        "Road Name",
+        "Congestion",
     ]
 
     st.map(
-        map_data,
-        width="stretch"
+        map_data[
+            [
+                "latitude",
+                "longitude",
+            ]
+        ],
+        width="stretch",
     )
 
     st.caption(
-        "Map shows the five project/simulation road segments "
-        "used by the Smart City Traffic Intelligence platform."
+        "Map shows the five project/simulation road segments used by the platform."
     )
-
-
-# ============================================================
-# SYSTEM INFORMATION
-# ============================================================
-
-st.divider()
-
-st.markdown(
-    '<div class="section-title">⚙️ System Architecture</div>',
-    unsafe_allow_html=True
-)
-
-architecture_col1, architecture_col2, architecture_col3, architecture_col4, architecture_col5 = st.columns(5)
-
-
-with architecture_col1:
-    st.info("🐍 Python\n\nTraffic Generation")
-
-
-with architecture_col2:
-    st.info("📨 Kafka\n\nReal-Time Streaming")
-
-
-with architecture_col3:
-    st.info("ℹ️ Snowflake\n\nData Platform")
-
-
-with architecture_col4:
-    st.info("🤖 ML\n\nAI Intelligence")
-
-
-with architecture_col5:
-    st.info("📊 Streamlit\n\nVisualization")
 
 
 # ============================================================
@@ -985,6 +982,6 @@ with architecture_col5:
 st.divider()
 
 st.caption(
-    "Real-Time Smart City Traffic Intelligence Platform | "
-    "Hyderabad | Kafka + Snowflake + Machine Learning + Streamlit"
+    "Real-Time Smart City Traffic Intelligence Platform · "
+    "Hyderabad · Kafka + Snowflake + dbt + Lightweight ML + Streamlit"
 )
