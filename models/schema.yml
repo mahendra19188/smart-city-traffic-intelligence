@@ -1,0 +1,85 @@
+version: 2
+
+models:
+
+  - name: stg_traffic_events
+    description: "Staging view containing raw traffic events from Snowflake."
+
+    columns:
+
+      - name: EVENT_ID
+        description: "Unique identifier for each traffic event."
+        tests:
+          - not_null
+          - unique
+
+      - name: ROAD_ID
+        description: "Identifier of the road segment."
+        tests:
+          - not_null
+
+      - name: EVENT_TIMESTAMP
+        description: "Timestamp when the traffic event was generated."
+        tests:
+          - not_null
+
+      - name: VEHICLE_COUNT
+        description: "Number of vehicles detected during the event."
+        tests:
+          - not_null
+
+      - name: AVERAGE_SPEED_KMH
+        description: "Average traffic speed in kilometers per hour."
+
+  - name: int_traffic_enriched
+    description: "Intermediate traffic model with derived congestion and time-based attributes."
+
+    columns:
+
+      - name: EVENT_ID
+        description: "Unique identifier for the traffic event."
+        tests:
+          - not_null
+          - unique
+
+      - name: CONGESTION_LEVEL
+        description: "Traffic congestion classification."
+        tests:
+          - not_null
+
+      - name: SPEED_CATEGORY
+        description: "Traffic speed classification."
+
+      - name: IS_PEAK_HOUR
+        description: "Indicates whether the event occurred during a defined peak traffic period."
+
+  - name: fct_traffic
+    description: "Analytics-ready traffic fact table used for reporting and dashboard analysis."
+
+    columns:
+
+      - name: EVENT_ID
+        description: "Unique identifier for the traffic event."
+        tests:
+          - not_null
+          - unique
+
+      - name: ROAD_ID
+        description: "Identifier of the road segment."
+        tests:
+          - not_null
+
+      - name: EVENT_TIMESTAMP
+        description: "Traffic event timestamp."
+        tests:
+          - not_null
+
+      - name: CONGESTION_LEVEL
+        description: "Traffic congestion classification."
+        tests:
+          - not_null
+
+      - name: VEHICLE_COUNT
+        description: "Number of vehicles detected."
+        tests:
+          - not_null

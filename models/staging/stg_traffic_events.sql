@@ -1,0 +1,24 @@
+{{ config(
+    materialized='view'
+) }}
+
+SELECT
+    EVENT_ID,
+    EVENT_TIMESTAMP,
+    ROAD_ID,
+    ROAD_NAME,
+    CITY,
+    LATITUDE,
+    LONGITUDE,
+    VEHICLE_COUNT,
+    AVERAGE_SPEED_KMH,
+    OCCUPANCY_PERCENT,
+    WEATHER_CONDITION,
+    TEMPERATURE_C,
+    RAINFALL_MM,
+    INCIDENT_FLAG
+FROM {{ source('traffic_raw', 'traffic_events') }}
+QUALIFY ROW_NUMBER() OVER (
+    PARTITION BY EVENT_ID
+    ORDER BY EVENT_TIMESTAMP DESC
+) = 1

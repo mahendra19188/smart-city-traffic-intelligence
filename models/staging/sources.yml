@@ -1,0 +1,37 @@
+version: 2
+
+sources:
+  - name: traffic_raw
+    database: TRAFFIC_DB
+    schema: RAW
+    description: "Raw traffic events ingested from the real-time Kafka pipeline."
+
+    tables:
+      - name: traffic_events
+        description: "Raw traffic events captured from the Smart City traffic streaming pipeline."
+        tests:
+          - not_null:
+              column_name: EVENT_ID
+          - not_null:
+              column_name: EVENT_TIMESTAMP
+          - not_null:
+              column_name: ROAD_ID
+
+        columns:
+          - name: EVENT_ID
+            description: "Unique identifier for each traffic event."
+
+          - name: EVENT_TIMESTAMP
+            description: "Timestamp when the traffic event was generated."
+
+          - name: ROAD_ID
+            description: "Identifier of the monitored road segment."
+
+          - name: VEHICLE_COUNT
+            description: "Number of vehicles detected in the traffic event."
+
+          - name: AVERAGE_SPEED_KMH
+            description: "Average vehicle speed in kilometers per hour."
+
+          - name: OCCUPANCY_PERCENT
+            description: "Estimated road occupancy percentage."

@@ -1,0 +1,31 @@
+{{ config(
+    materialized='table'
+) }}
+
+SELECT
+    EVENT_ID,
+    EVENT_TIMESTAMP,
+    ROAD_ID,
+    ROAD_NAME,
+    CITY,
+    LATITUDE,
+    LONGITUDE,
+
+    VEHICLE_COUNT,
+    AVERAGE_SPEED_KMH,
+    OCCUPANCY_PERCENT,
+
+    WEATHER_CONDITION,
+    TEMPERATURE_C,
+    RAINFALL_MM,
+    INCIDENT_FLAG,
+
+    HOUR_OF_DAY,
+    DAY_OF_WEEK,
+    CONGESTION_LEVEL,
+    SPEED_CATEGORY,
+    IS_PEAK_HOUR,
+
+    CURRENT_TIMESTAMP() AS DBT_LOADED_AT
+
+FROM {{ ref('int_traffic_enriched') }}
